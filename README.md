@@ -13,5 +13,7 @@ pip3 install -r requirements.txt
 ## Usage
 
 ```sh
-python3 -m snapmap_archiver -o [OUTPUT DIR] -g [LATITUDE],[LONGITUDE]
+python3 -m snapmap_archiver -o [OUTPUT DIR] -g="[LATITUDE],[LONGITUDE]"
 ```
+
+Unfortunately you have to use the arbitrary `-g="lat,lon"` rather than just `-g "lat,lon"` when parsing negative numbers as `argsparse` interprets said numbers as extra arguments. 

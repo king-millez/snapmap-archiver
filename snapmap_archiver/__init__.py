@@ -1,9 +1,10 @@
 import os, sys, argparse
 from . import get_data
+from .utils import *
 
 def main():
-    geo_msg = 'Use comma seperated values for latitude/longitude, e.g: "35.0,67.0"'
-    parser = argparse.ArgumentParser(description='Download content from Snapmaps', usage='snapmap_archiver -o [OUTPUT DIR] -g [LATITUDE],[LONGITUDE]')
+    geo_msg = 'Use comma seperated values for latitude/longitude, e.g: -g="35.0,67.0"'
+    parser = argparse.ArgumentParser(description='Download content from Snapmaps', usage='snapmap_archiver -o [OUTPUT DIR] -g="[LATITUDE],[LONGITUDE]"')
     parser.add_argument('-o', dest='output_dir', type=str, help='Output directory for downloaded content.')
     parser.add_argument('-g', dest='geolocation', type=str, help='Latitude/longitude of desired area.')
     parser.add_argument('-z', dest='zoom_depth', type=float, help='Snapmaps zoom depth, default is 5.')
@@ -21,9 +22,9 @@ def main():
     if(not os.path.isdir(args.output_dir)):
         sys.exit(f'Output directory "{args.output_dir}" does not exist.')
 
-    try:
-        geo_data = args.geolocation.split(',', 1)
-        print(get_data.api_query(geo_data[0], geo_data[1]))
-    except:
-        sys.exit(geo_msg)
-    
+    #try:
+    geo_data = args.geolocation.split(',', 1)
+    api_response = get_data.api_query(float(geo_data[0]), float(geo_data[1]))
+    print(organise_media(api_response))
+    #except:
+    #    sys.exit(geo_msg)
