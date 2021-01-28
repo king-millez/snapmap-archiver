@@ -25,6 +25,6 @@ def main():
     #try:
     geo_data = args.geolocation.split(',', 1)
     api_response = get_data.api_query(float(geo_data[0]), float(geo_data[1]))
-    print(organise_media(api_response))
+    print(json.dumps(organise_media(api_response), indent=2))
     #except:
     #    sys.exit(geo_msg)
