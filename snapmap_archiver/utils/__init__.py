@@ -1,4 +1,5 @@
-import json
+import json, subprocess
+from requests import get
 
 def organise_media(api_data):
     to_download = []
@@ -17,3 +18,11 @@ def organise_media(api_data):
             data_dict['media']['raw_url'] = entry['snapInfo']['publicMediaInfo']['publicImageMediaInfo']['mediaUrl']
         to_download.append(data_dict)
     return(to_download)
+
+def download_media(output_dir, organised_data):
+    for snap in organised_data:
+        cmd = ['aria2c.exe', snap['media']['raw_url'], '-d', output_dir, '-o']
+        if(snap['media']['raw_url'][-3:] == 'mp4'):
+            subprocess.run(cmd + [snap['folder'] + '.mp4'])
+        else:
+            subprocess.run(cmd + [snap['folder'] + '.jpg'])

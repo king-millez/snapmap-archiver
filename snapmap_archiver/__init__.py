@@ -20,11 +20,14 @@ def main():
         sys.exit(geo_msg)
 
     if(not os.path.isdir(args.output_dir)):
-        sys.exit(f'Output directory "{args.output_dir}" does not exist.')
+        try:
+            os.mkdir(args.output_dir)
+        except:
+            sys.exit(f'Could not create directory "{args.output_dir}"')
 
     #try:
     geo_data = args.geolocation.split(',', 1)
     api_response = get_data.api_query(float(geo_data[0]), float(geo_data[1]))
-    print(json.dumps(organise_media(api_response), indent=2))
+    download_media(args.output_dir, organise_media(api_response))
     #except:
     #    sys.exit(geo_msg)

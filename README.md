@@ -2,6 +2,8 @@
 
 A tool written in Python to download all Snapmaps content from a specific geolocation.
 
+Currently only working on Windows hosts.
+
 ## Setup
 
 Install dependencies with `pip3`.
@@ -9,6 +11,8 @@ Install dependencies with `pip3`.
 ```sh
 pip3 install -r requirements.txt
 ```
+
+Install [aria2c](http://aria2.github.io/)
 
 ## Usage
 
