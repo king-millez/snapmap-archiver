@@ -2,8 +2,6 @@
 
 A tool written in Python to download all Snapmaps content from a specific geolocation.
 
-Currently only working on Windows hosts.
-
 ## Setup
 
 Install dependencies with `pip3`.
