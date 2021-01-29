@@ -2,7 +2,8 @@ import sys, json, subprocess, os
 
 def organise_media(api_data):
     to_download = []
-    for entry in json.loads(api_data)['manifest']['elements']:
+    print(f'Found {len(api_data)} Snaps.')
+    for entry in api_data:
         data_dict = {'id': entry['id'], 'create_time': entry['timestamp'], 'media': {}}
         for locale in entry['snapInfo']['title']['strings']:
             if(locale['locale'] == 'en'):

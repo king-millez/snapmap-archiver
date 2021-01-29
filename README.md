@@ -31,3 +31,7 @@ Unfortunately you have to use the arbitrary `-g="lat,lon"` rather than just `-g 
 #### Export JSON
 
 You can export a JSON file with info about downloaded snaps with the `--write-json` argument, which will contain information like the time the Snap was posted, and the Snap location.
+
+#### Snap Radius
+
+The radius from the coordinates you provide that will be included for downloads. `-r 20000` will download all Snaps within a 20km radius of your coordinates.
