@@ -6,6 +6,10 @@ A tool written in Python to download all Snapmaps content from a specific geoloc
 
 ## Setup
 
+`pip3 install snapmap-archiver`
+
+[View on PyPI](https://pypi.org/project/snapmap-archiver/)
+
 Install dependencies with `pip3`.
 
 ```sh
