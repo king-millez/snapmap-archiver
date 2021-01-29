@@ -39,6 +39,6 @@ def api_query(lat, lon, zl=5, max_radius=10000):
                 current_iteration = current_iteration - 100
             else:
                 current_iteration = 1
+        return [i for n, i in enumerate(available_snaps) if i not in available_snaps[n + 1:]]
     except:
         sys.exit("You seem to have been rate limited, please wait and try again.")
-    return [i for n, i in enumerate(available_snaps) if i not in available_snaps[n + 1:]]

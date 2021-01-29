@@ -1,6 +1,6 @@
 # snapmap-archiver
 
-A tool written in Python to download all Snapmaps content from a specific geolocation.
+A tool written in Python to download all Snapmaps content from a specific location.
 
 ![snapmap-archiver splash](/.github/img/Splash.png)
 
@@ -21,10 +21,10 @@ Install [aria2c](http://aria2.github.io/)
 ## Usage
 
 ```sh
-python3 -m snapmap_archiver -o [OUTPUT DIR] -g="[LATITUDE],[LONGITUDE]"
+python3 -m snapmap_archiver -o [OUTPUT DIR] -l="[LATITUDE],[LONGITUDE]"
 ```
 
-Unfortunately you have to use the arbitrary `-g="lat,lon"` rather than just `-g "lat,lon"` when parsing negative numbers as `argsparse` interprets said numbers as extra arguments.
+Unfortunately you have to use the arbitrary `-l="lat,lon"` rather than just `-l "lat,lon"` when parsing negative numbers as `argsparse` interprets said numbers as extra arguments.
 
 ### Optional Arguments
 
