@@ -23,23 +23,24 @@ def download_media(output_dir, organised_data, dl_json=False):
     for index,snap in enumerate(organised_data):
         DL_MSG = f'Snap {index + 1}/{len(organised_data)} downloading...'
 
+        filename = snap['location'] + ' - ' + snap['create_time'] + ' - ' + snap['id']
         if(dl_json):
-            with open(f'{output_dir}/{snap["id"]}.info.json', 'w') as json_file:
+            with open(f'{output_dir}/' + filename + '.info.json', 'w') as json_file:
                 json_file.write(json.dumps(snap, indent=2))
         if(sys.platform == 'win32'):
             cmd = ['aria2c.exe', snap['media']['raw_url'], '-d', output_dir, '-o']
         else:
             cmd = ['aria2c', snap['media']['raw_url'], '-d', output_dir, '-o']
-
+        
         if(snap['media']['raw_url'][-3:] == 'mp4'):
-            if(os.path.exists(f'{cmd[-2]}/{snap["id"]}.mp4')):
+            if(os.path.exists(f'{cmd[-2]}/' + filename + '.mp4')):
                 print(f'Snap {index + 1}/{len(organised_data)} already downloaded.')
             else:
-                print(DL_MSG + f' - {snap["id"]}.mp4')
-                subprocess.run(cmd + [snap['id'] + '.mp4'], capture_output=True)
+                print(DL_MSG + f' - {filename}.mp4')
+                subprocess.run(cmd + [filename + '.mp4'], capture_output=True)
         else:
-            if(os.path.exists(f'{cmd[-2]}/{snap["id"]}.jpg')):
+            if(os.path.exists(f'{cmd[-2]}/' + filename + '.jpg')):
                 print(f'Snap {index + 1}/{len(organised_data)} already downloaded.')
             else:
-                print(DL_MSG + f' - {snap["id"]}.jpg')
-                subprocess.run(cmd + [snap['id'] + '.jpg'], capture_output=True)
+                print(DL_MSG + f' - {filename}.jpg')
+                subprocess.run(cmd + [filename + '.jpg'], capture_output=True)
