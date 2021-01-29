@@ -1,4 +1,4 @@
-import requests, random, json, pathlib
+import requests, random, json, pathlib, sys
 
 from requests.api import get
 
@@ -27,15 +27,18 @@ def api_query(lat, lon, zl=5, max_radius=10000):
     available_snaps = []
     current_iteration = max_radius
     _epoch = get_epoch()
-    while current_iteration != 1:
-        payload = {"requestGeoPoint":{"lat":lat,"lon":lon},"zoomLevel":zl,"tileSetId":{"flavor":"default","epoch":_epoch,"type":1},"radiusMeters":current_iteration,"maximumFuzzRadius":0}
-        req_headers['Content-Length'] = str(len(str(payload)))
-        api_data = json.loads(requests.post('https://ms.sc-jpl.com/web/getPlaylist', headers=req_headers, json=payload).text)
-        available_snaps = available_snaps + api_data['manifest']['elements']
-        if(current_iteration > 2000):
-            current_iteration = current_iteration - 2000
-        elif(current_iteration > 1000):
-            current_iteration = current_iteration - 100
-        else:
-            current_iteration = 1
+    try:
+        while current_iteration != 1:
+            payload = {"requestGeoPoint":{"lat":lat,"lon":lon},"zoomLevel":zl,"tileSetId":{"flavor":"default","epoch":_epoch,"type":1},"radiusMeters":current_iteration,"maximumFuzzRadius":0}
+            req_headers['Content-Length'] = str(len(str(payload)))
+            api_data = json.loads(requests.post('https://ms.sc-jpl.com/web/getPlaylist', headers=req_headers, json=payload).text)
+            available_snaps = available_snaps + api_data['manifest']['elements']
+            if(current_iteration > 2000):
+                current_iteration = current_iteration - 2000
+            elif(current_iteration > 1000):
+                current_iteration = current_iteration - 100
+            else:
+                current_iteration = 1
+    except:
+        sys.exit("You seem to have been rate limited, please wait and try again.")
     return [i for n, i in enumerate(available_snaps) if i not in available_snaps[n + 1:]]
