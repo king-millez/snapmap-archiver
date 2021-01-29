@@ -1,7 +1,7 @@
 import requests, random, json, pathlib
 
 req_headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:84.0) Gecko/20100101 Firefox/84.0',
+    'User-Agent': random.choice(json.loads(open(f'{pathlib.Path(__file__).parent.absolute()}/utils/user-agents.json', 'r').read())),
     'Host': 'ms.sc-jpl.com',
     'Accept': '*/*',
     'Accept-Language': 'en-US',

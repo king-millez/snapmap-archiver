@@ -1,5 +1,4 @@
 import sys, json, subprocess
-from requests import get
 
 def organise_media(api_data):
     to_download = []
