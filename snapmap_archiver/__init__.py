@@ -27,11 +27,16 @@ def main():
         except:
             sys.exit(f'Could not create directory "{args.output_dir}"')
 
+    if(not args.radius):
+        args.radius = 10000
+    elif(args.radius > 85000):
+        print('Supplied radius value is too large (above 85,000). Defaulting to 85000.')
+        args.radius = 85000
+    
     try:
-        if(not args.radius):
-            args.radius = 10000
         geo_data = args.location.split(',', 1)
-        api_response = get_data.api_query(float(geo_data[0]), float(geo_data[1]), max_radius=args.radius)
-        download_media(args.output_dir, organise_media(api_response), args.write_json)
     except:
         sys.exit(geo_msg)
+    api_response = get_data.api_query(float(geo_data[0]), float(geo_data[1]), max_radius=args.radius)
+    download_media(args.output_dir, organise_media(api_response), args.write_json)
+    

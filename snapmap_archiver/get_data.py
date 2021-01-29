@@ -28,6 +28,7 @@ def api_query(lat, lon, zl=5, max_radius=10000):
     current_iteration = max_radius
     _epoch = get_epoch()
     try:
+        print('Querying Snaps...')
         while current_iteration != 1:
             payload = {"requestGeoPoint":{"lat":lat,"lon":lon},"zoomLevel":zl,"tileSetId":{"flavor":"default","epoch":_epoch,"type":1},"radiusMeters":current_iteration,"maximumFuzzRadius":0}
             req_headers['Content-Length'] = str(len(str(payload)))
