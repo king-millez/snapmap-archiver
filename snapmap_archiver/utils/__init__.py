@@ -15,7 +15,10 @@ def organise_media(api_data):
             except:
                 data_dict['media']['video_overlay'] = None
         except:
-            data_dict['media']['raw_url'] = entry['snapInfo']['publicMediaInfo']['publicImageMediaInfo']['mediaUrl']
+            try:
+                data_dict['media']['raw_url'] = entry['snapInfo']['publicMediaInfo']['publicImageMediaInfo']['mediaUrl']
+            except:
+                continue
         to_download.append(data_dict)
     return(to_download)
 
