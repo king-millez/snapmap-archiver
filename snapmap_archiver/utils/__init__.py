@@ -15,7 +15,14 @@ def organise_media(api_data):
             except:
                 data_dict['media']['video_overlay'] = None
         except:
-            data_dict['media']['raw_url'] = entry['snapInfo']['publicMediaInfo']['publicImageMediaInfo']['mediaUrl']
+            try:
+                data_dict['media']['raw_url'] = entry['snapInfo']['publicMediaInfo']['publicImageMediaInfo']['mediaUrl']
+            except:
+                for i in entry['snapInfo'].items():
+                    if(i[0] == 'streamingThumbnailInfo'): # For some reason JSON throws an error if you just query this key directly, so you have to do it this way.
+                        data_dict['media']['raw_url'] = i[1]['infos'][-1]['thumbnailUrl']
+                if(len(data_dict['media']) == 0):
+                    continue # If there's no video file and no video/image thumbnail, just skip the snap since there's nothing to download
         to_download.append(data_dict)
     return(to_download)
 
