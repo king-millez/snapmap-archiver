@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "snapmap-archiver"
-version = "1.2.0"
+version = "1.2.1"
 description = "Download all Snapmaps content from a specific location."
 readme = "README.md"
 authors = ["king-millez <Millez.Dev@gmail.com>"]
