@@ -8,7 +8,7 @@ long_description = (here / 'README.md').read_text(encoding='utf-8')
 setup(
     name='snapmap-archiver',
     version='1.2.0',
-    description='Download all Snapmaps content from a specific geolocation.',
+    description='Download all Snapmaps content from a specific location.',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/king-millez/snapmap-archiver',
