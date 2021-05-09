@@ -16,7 +16,13 @@ Install dependencies with `pip3`.
 pip3 install -r requirements.txt
 ```
 
-Install [aria2c](http://aria2.github.io/)
+### Install [aria2c](http://aria2.github.io/)
+
+Download `aria2c` from here:
+
+[https://aria2.github.io/](https://aria2.github.io/)
+
+This is the downloader used for the fastest Snap download speeds.
 
 ## Usage
 

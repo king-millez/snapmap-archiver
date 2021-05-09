@@ -2,8 +2,9 @@
 name = "snapmap-archiver"
 version = "1.2.0"
 description = "Download all Snapmaps content from a specific location."
+readme = "README.md"
 authors = ["king-millez <Millez.Dev@gmail.com>"]
-license = "GNU GPL v3"
+license = "GPL-3.0-or-later"
 
 [tool.poetry.dependencies]
 python = "^3.9"
