@@ -9,7 +9,12 @@ def organise_media(api_data):
             if(locale['locale'] == 'en'):
                 data_dict['location'] = locale['text']
         try:
+            data_dict['media']['overlayText'] = entry['snapInfo']['overlayText']
+        except:
+            data_dict['media']['overlayText'] = None
+        try:
             data_dict['media']['raw_url'] = entry['snapInfo']['streamingMediaInfo']['prefixUrl'] + 'media.mp4'
+            data_dict['media']['filetype'] = "mp4"
             try:
                 data_dict['media']['video_overlay'] = entry['snapInfo']['streamingMediaInfo']['prefixUrl'] + 'overlay.png'
             except:
@@ -17,6 +22,7 @@ def organise_media(api_data):
         except:
             try:
                 data_dict['media']['raw_url'] = entry['snapInfo']['publicMediaInfo']['publicImageMediaInfo']['mediaUrl']
+                data_dict['media']['filetype'] = "jpg"
             except:
                 for i in entry['snapInfo'].items():
                     if(i[0] == 'streamingThumbnailInfo'): # For some reason JSON throws an error if you just query this key directly, so you have to do it this way.
