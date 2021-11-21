@@ -42,15 +42,42 @@ def download_media(output_dir, organised_data, dl_json=False):
                 json_file.write(json.dumps(snap, indent=2))
         if(sys.platform == 'win32'):
             cmd = ['aria2c.exe', snap['media']['raw_url'], '-d', output_dir, '-o']
+            try:
+                # Try to download overlay.png if exists
+                cmd_overlay = ['aria2c.exe', snap['media']['video_overlay'], '-d', output_dir, '-o']
+            except KeyError:
+                pass
         else:
             cmd = ['aria2c', snap['media']['raw_url'], '-d', output_dir, '-o']
-        
+            try:
+                # Try to download overlay.png if exists
+                cmd_overlay = ['aria2c', snap['media']['video_overlay'], '-d', output_dir, '-o']
+            except KeyError:
+                pass
         if(snap['media']['raw_url'][-3:] == 'mp4'):
             if(os.path.exists(f'{cmd[-2]}/' + filename + '.mp4')):
                 print(f'Snap {index + 1}/{len(organised_data)} already downloaded.')
             else:
                 print(DL_MSG + f' - {filename}.mp4')
-                subprocess.run(cmd + [filename + '.mp4'], capture_output=True)
+                # If there is an overlay file, merge overlay and video to one file using ffmpeg
+                if snap['media']['video_overlay'] != None:
+                    # Download original video without overlay
+                    subprocess.run(cmd + [filename + 'no_overlay.mp4'], capture_output=True)
+                    if (os.path.exists(f'{cmd[-2]}/' + filename + '_overlay.png')):
+                        print(f'Snap {index + 1}/{len(organised_data)} already downloaded.')
+                    else:
+                        print(DL_MSG + f' - {filename}_overlay.png')
+                        # Download overlay.png
+                        subprocess.run(cmd_overlay + [filename + '_overlay.png'], capture_output=True)
+                    merge_overlay =['ffmpeg',  "-y", "-i", f"{cmd[-2]}/{filename}no_overlay.mp4", "-i", f"{cmd[-2]}/{filename}_overlay.png", "-filter_complex", "[1][0]scale2ref[i][m];[m][i]overlay[v]", "-map",  "[v]", "-map", "0:a?", "-ac", "2"]
+                    # Merge video and overlay to one file using ffmpeg
+                    subprocess.run(merge_overlay + [f"{cmd[-2]}/{filename}.mp4"] , capture_output=True)
+                    # Delete temp file
+                    os.remove(f"{cmd[-2]}/" + filename + 'no_overlay.mp4')
+                    os.remove(f"{cmd[-2]}/" + filename + '_overlay.png')
+                else:
+                    subprocess.run(cmd + [filename + '.mp4'], capture_output=True)
+
         else:
             if(os.path.exists(f'{cmd[-2]}/' + filename + '.jpg')):
                 print(f'Snap {index + 1}/{len(organised_data)} already downloaded.')
