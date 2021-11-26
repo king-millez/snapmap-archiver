@@ -41,3 +41,7 @@ You can export a JSON file with info about downloaded snaps with the `--write-js
 #### Snap Radius
 
 The radius from the coordinates you provide that will be included for downloads. `-r 20000` will download all Snaps within a 20km radius of your coordinates.
+
+#### No Overlay
+
+By default the script merges the video and the overlay file into one file. With the `--no-overlay` argument you can disable this and only download the raw video.  
