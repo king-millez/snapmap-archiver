@@ -16,7 +16,7 @@ def organise_media(api_data):
             data_dict['media']['raw_url'] = entry['snapInfo']['streamingMediaInfo']['prefixUrl'] + 'media.mp4'
             data_dict['media']['filetype'] = "mp4"
             try:
-                data_dict['media']['video_overlay'] = entry['snapInfo']['streamingMediaInfo']['prefixUrl'] + 'overlay.png'
+                data_dict['media']['video_overlay'] = entry['snapInfo']['streamingMediaInfo']['prefixUrl'] + entry['snapInfo']['streamingMediaInfo']['overlayUrl']
             except:
                 data_dict['media']['video_overlay'] = None
         except:
