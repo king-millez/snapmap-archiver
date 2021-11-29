@@ -9,14 +9,20 @@ def organise_media(api_data):
             if(locale['locale'] == 'en'):
                 data_dict['location'] = locale['text']
         try:
+            data_dict['media']['overlayText'] = entry['snapInfo']['overlayText']
+        except:
+            data_dict['media']['overlayText'] = None
+        try:
             data_dict['media']['raw_url'] = entry['snapInfo']['streamingMediaInfo']['prefixUrl'] + 'media.mp4'
+            data_dict['media']['filetype'] = "mp4"
             try:
-                data_dict['media']['video_overlay'] = entry['snapInfo']['streamingMediaInfo']['prefixUrl'] + 'overlay.png'
+                data_dict['media']['video_overlay'] = entry['snapInfo']['streamingMediaInfo']['prefixUrl'] + entry['snapInfo']['streamingMediaInfo']['overlayUrl']
             except:
                 data_dict['media']['video_overlay'] = None
         except:
             try:
                 data_dict['media']['raw_url'] = entry['snapInfo']['publicMediaInfo']['publicImageMediaInfo']['mediaUrl']
+                data_dict['media']['filetype'] = "jpg"
             except:
                 for i in entry['snapInfo'].items():
                     if(i[0] == 'streamingThumbnailInfo'): # For some reason JSON throws an error if you just query this key directly, so you have to do it this way.
@@ -26,7 +32,7 @@ def organise_media(api_data):
         to_download.append(data_dict)
     return(to_download)
 
-def download_media(output_dir, organised_data, dl_json=False):
+def download_media(output_dir, organised_data, dl_json=False, no_overlay=False):
     for index,snap in enumerate(organised_data):
         DL_MSG = f'Snap {index + 1}/{len(organised_data)} downloading...'
 
@@ -36,15 +42,35 @@ def download_media(output_dir, organised_data, dl_json=False):
                 json_file.write(json.dumps(snap, indent=2))
         if(sys.platform == 'win32'):
             cmd = ['aria2c.exe', snap['media']['raw_url'], '-d', output_dir, '-o']
+            try:
+                # Try to download overlay.png if exists
+                cmd_overlay = ['aria2c.exe', snap['media']['video_overlay'], '-d', output_dir, '-o']
+            except KeyError:
+                pass
         else:
             cmd = ['aria2c', snap['media']['raw_url'], '-d', output_dir, '-o']
-        
+            try:
+                # Try to download overlay.png if exists
+                cmd_overlay = ['aria2c', snap['media']['video_overlay'], '-d', output_dir, '-o']
+            except KeyError:
+                pass
         if(snap['media']['raw_url'][-3:] == 'mp4'):
             if(os.path.exists(f'{cmd[-2]}/' + filename + '.mp4')):
                 print(f'Snap {index + 1}/{len(organised_data)} already downloaded.')
             else:
                 print(DL_MSG + f' - {filename}.mp4')
-                subprocess.run(cmd + [filename + '.mp4'], capture_output=True)
+                # Download snap without overlay
+                if no_overlay:
+                    subprocess.run(cmd + [filename + '.mp4'], capture_output=True)
+                else:
+                    if snap['media']['video_overlay'] != None:
+                        merge_overlay =['ffmpeg',  "-y", "-i", snap['media']['raw_url'], "-i", snap['media']['video_overlay'], "-filter_complex", "[1][0]scale2ref[i][m];[m][i]overlay[v]", "-map",  "[v]", "-map", "0:a?", "-ac", "2"]
+                        # Merge video and overlay to one file using ffmpeg
+                        subprocess.run(merge_overlay + [f"{cmd[-2]}/{filename}.mp4"] , capture_output=True)
+                        # Delete temp file
+                    else:
+                        subprocess.run(cmd + [filename + '.mp4'], capture_output=True)
+
         else:
             if(os.path.exists(f'{cmd[-2]}/' + filename + '.jpg')):
                 print(f'Snap {index + 1}/{len(organised_data)} already downloaded.')

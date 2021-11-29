@@ -11,7 +11,7 @@ def main():
     parser.add_argument('-z', dest='zoom_depth', type=float, help='Snapmaps zoom depth, default is 5.')
     parser.add_argument('-r', dest='radius', type=int, help='Maximum Snap radius in meters, default is 10000.')
     parser.add_argument('--write-json', dest='write_json', action='store_true', default=False, help='Write Snap metadata JSON.')
-    parser.add_argument('--use-ffmpeg', dest='use_ffmpeg', action='store_true', default=False, help='Use ffmpeg to merge graphical elements to video Snaps.')
+    parser.add_argument('--no-overlay', dest='no_overlay', action='store_true', default=False, help='Do not use ffmpeg to merge graphical elements to video Snaps. Default is False')
     args = parser.parse_args()
 
     if(not args.output_dir):
@@ -42,5 +42,5 @@ def main():
     except:
         sys.exit(geo_msg)
     api_response = get_data.api_query(float(geo_data[0]), float(geo_data[1]), max_radius=args.radius)
-    download_media(args.output_dir, organise_media(api_response), args.write_json)
+    download_media(args.output_dir, organise_media(api_response), args.write_json, args.no_overlay)
     
