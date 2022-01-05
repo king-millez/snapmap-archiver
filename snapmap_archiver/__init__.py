@@ -12,7 +12,7 @@ from .utils import (
 
 def main():
     USAGE_MSG = 'snapmap_archiver -o [OUTPUT DIR] -l="[LATITUDE],[LONGITUDE]' \
-                ' [SNAP URL (optional)]"'
+                ' -l="[LATITUDE],[LONGITUDE] [SNAP URL (optional)]"'
     geo_msg = 'Use comma seperated values for ' \
         'latitude/longitude, e.g: -l="35.0,67.0"'
     parser = argparse.ArgumentParser(
@@ -22,7 +22,8 @@ def main():
         help='Output directory for downloaded content.')
     parser.add_argument(
         '-l', '--location', dest='location',
-        type=str, help='Latitude/longitude of desired area.')
+        type=str, help='Latitude/longitude of desired area. Can be used multiple times',
+        action='append', nargs='*')
     parser.add_argument(
         '-z', dest='zoom_depth', type=float,
         help='Snapmaps zoom depth, default is 5.')
@@ -68,14 +69,14 @@ def main():
         print('Output directory (-o) is required.')
         sys.exit(USAGE_MSG)
 
-    if not args.location and not snap_ids:
-        print('Either a location (-l) is required, '
-              'or at least one valid Snap URL.')
+    if not args.location and not snap_ids and not args.input_file:
+        print('No form of input was supplied.')
         sys.exit(USAGE_MSG)
 
     if args.location:
-        if ',' not in args.location:
-            sys.exit(geo_msg)
+        for coords in args.location:
+            if ',' not in coords[0]:
+                sys.exit(f'{geo_msg}\n{coords} is not valid.')
 
     if not os.path.isdir(args.output_dir):
         try:
@@ -91,18 +92,19 @@ def main():
         args.radius = 85000
 
     if args.location:
-        try:
-            geo_data = args.location.split(',', 1)
-        except Exception:
-            sys.exit(geo_msg)
-        api_response = get_data.api_query(
-            float(geo_data[0]), float(geo_data[1]), max_radius=args.radius)
-        download_media(
-            args.output_dir,
-            organise_media(api_response),
-            args.write_json,
-            args.no_overlay
-        )
+        for coords in args.location:
+            try:
+                geo_data = coords[0].split(',', 1)
+            except Exception:
+                sys.exit(geo_msg)
+            api_response = get_data.api_query(
+                float(geo_data[0]), float(geo_data[1]), max_radius=args.radius)
+            download_media(
+                args.output_dir,
+                organise_media(api_response),
+                args.write_json,
+                args.no_overlay
+            )
 
     if snap_ids:
         download_media(
