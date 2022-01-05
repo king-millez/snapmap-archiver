@@ -1,9 +1,14 @@
-import requests, random, json, pathlib, sys
+import requests
+import random
+import json
+import pathlib
+import sys
 
-from requests.api import get
 
 req_headers = {
-    'User-Agent': random.choice(json.loads(open(f'{pathlib.Path(__file__).parent.absolute()}/utils/user-agents.json', 'r').read())),
+    'User-Agent': random.choice(
+        json.loads(open(f'{pathlib.Path(__file__).parent.absolute()}/utils/use'
+                        'r-agents.json', 'r').read())),
     'Host': 'ms.sc-jpl.com',
     'Accept': '*/*',
     'Accept-Language': 'en-US',
@@ -18,10 +23,14 @@ req_headers = {
     'TE': 'Trailers',
 }
 
+
 def get_epoch():
-    for entry in json.loads(requests.post('https://ms.sc-jpl.com/web/getLatestTileSet', headers=req_headers, json={}).text)['tileSetInfos']:
+    for entry in json.loads(requests.post(
+        'https://ms.sc-jpl.com/web/getLatestTileSet',
+            headers=req_headers, json={}).text)['tileSetInfos']:
         if(entry['id']['type'] == 'HEAT'):
             return(entry['id']['epoch'])
+
 
 def api_query(lat, lon, zl=5, max_radius=10000):
     available_snaps = []
@@ -30,16 +39,35 @@ def api_query(lat, lon, zl=5, max_radius=10000):
     try:
         print('Querying Snaps...')
         while current_iteration != 1:
-            payload = {"requestGeoPoint":{"lat":lat,"lon":lon},"zoomLevel":zl,"tileSetId":{"flavor":"default","epoch":_epoch,"type":1},"radiusMeters":current_iteration,"maximumFuzzRadius":0}
+            print(f'Querying with radius {current_iteration}...')
+            payload = {
+                "requestGeoPoint": {
+                    "lat": lat,
+                    "lon": lon
+                },
+                "zoomLevel": zl,
+                "tileSetId": {
+                    "flavor": "default",
+                    "epoch": _epoch,
+                    "type": 1
+                },
+                "radiusMeters": current_iteration,
+                "maximumFuzzRadius": 0
+            }
             req_headers['Content-Length'] = str(len(str(payload)))
-            api_data = json.loads(requests.post('https://ms.sc-jpl.com/web/getPlaylist', headers=req_headers, json=payload).text)
-            available_snaps = available_snaps + api_data['manifest']['elements']
+            api_data = requests.post('https://ms.sc-jpl.com/web/getPlaylist',
+                                     headers=req_headers, json=payload).json()
+            available_snaps = available_snaps + \
+                api_data['manifest']['elements']
             if(current_iteration > 2000):
                 current_iteration = current_iteration - 2000
             elif(current_iteration > 1000):
                 current_iteration = current_iteration - 100
             else:
                 current_iteration = 1
-        return [i for n, i in enumerate(available_snaps) if i not in available_snaps[n + 1:]]
-    except:
-        sys.exit("You seem to have been rate limited, please wait and try again.")
+        print('Sorting list of Snaps...')
+        return [i for n, i in enumerate(available_snaps)
+                if i not in available_snaps[n + 1:]]
+    except Exception:
+        sys.exit(
+            "You seem to have been rate limited, please wait and try again.")
