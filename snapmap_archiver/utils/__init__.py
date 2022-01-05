@@ -2,6 +2,13 @@ import sys
 import json
 import subprocess
 import os
+import re
+
+
+def match_snap_id(url: str) -> str:
+    return re.search(
+        r'(W7_(?:[aA-zZ0-9\-_\+]{22})(?:[aA-zZ0-9-_\+]{28})AAAAAA)',
+        url).group(1)
 
 
 def organise_media(api_data):
@@ -13,9 +20,13 @@ def organise_media(api_data):
             'create_time': entry['timestamp'],
             'media': {}
         }
-        for locale in entry['snapInfo']['title']['strings']:
-            if locale['locale'] == 'en':
-                data_dict['location'] = locale['text']
+        try:
+            for locale in entry['snapInfo']['title']['strings']:
+                if locale['locale'] == 'en':
+                    data_dict['location'] = locale['text']
+        except KeyError:
+            data_dict['location'] = \
+                entry['snapInfo']['localitySubtitle']['fallback']
         try:
             data_dict['media']['overlayText'] = \
                 entry['snapInfo']['overlayText']
