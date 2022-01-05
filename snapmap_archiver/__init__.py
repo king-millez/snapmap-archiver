@@ -30,6 +30,10 @@ def main():
         '-r', dest='radius', type=int,
         help='Maximum Snap radius in meters, default is 10000.')
     parser.add_argument(
+        '--file', dest='input_file', type=str,
+        help='File containing line-separated Snap URLs or IDs'
+    )
+    parser.add_argument(
         '--write-json', dest='write_json', action='store_true',
         default=False, help='Write Snap metadata JSON.')
     parser.add_argument(
@@ -38,11 +42,27 @@ def main():
         help='Do not use ffmpeg to merge graphical '
              'elements to video Snaps. Default is False')
     args, unknown = parser.parse_known_args()
+
+    snap_ids = []
     if unknown:
         snap_ids = [match_snap_id(i) for i in unknown if re.match(
             r'https?:\/\/map\.snapchat\.com\/ttp\/snap\/W7_(?:[aA-zZ0-9\-_\+]{22})(?:[aA-zZ0-9-_\+]{28})AAAAAA\/?(?:@-?[0-9]{1,3}\.?[0-9]{0,},-?[0-9]{1,3}\.?[0-9]{0,}(?:,[0-9]{1,3}\.?[0-9]{0,}z))?',
             i
         )]
+
+    if args.input_file:
+        if os.path.isfile(args.input_file):
+            with open(args.input_file, 'r') as f:
+                to_format = f.read().split('\n')
+                for candidate in to_format:
+                    if len(candidate) > 0:
+                        try:
+                            snap_ids.append(match_snap_id(candidate))
+                        except Exception:
+                            print(
+                                f'{candidate} is not a valid Snap URL or ID.')
+        else:
+            sys.exit('Input file does not exist.')
 
     if not args.output_dir:
         print('Output directory (-o) is required.')
