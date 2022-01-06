@@ -7,9 +7,7 @@ import sys
 
 
 req_headers = {
-    'User-Agent': random.choice(
-        json.loads(open(f'{pathlib.Path(__file__).parent.absolute()}/utils/use'
-                        'r-agents.json', 'r').read())),
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.10240',
     'Host': 'ms.sc-jpl.com',
     'Accept': '*/*',
     'Accept-Language': 'en-US',

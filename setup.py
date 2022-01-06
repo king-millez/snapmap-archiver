@@ -19,5 +19,18 @@ setup(
         'Operating System :: OS Independent',
     ],
     packages=find_packages(),
-    python_requires='>=3.6'
+    include_package_data=True,
+    python_requires='>=3.6',
+    install_requires=[
+        'certifi',
+        'chardet',
+        'idna',
+        'requests',
+        'urllib3',
+    ],
+    entry_points={
+        "console_scripts": [
+            "snapmap-archiver=snapmap_archiver:main"
+        ]
+    }
 )

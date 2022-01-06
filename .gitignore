@@ -3,7 +3,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+main.py
 # C extensions
 *.so
 poetry.lock
