@@ -1,32 +1,31 @@
-from setuptools import setup, find_packages
-import pathlib
+# -*- coding: utf-8 -*-
+"""setup.py: setuptools control."""
 
-here = pathlib.Path(__file__).parent.resolve()
+import re
+from setuptools import setup
 
-long_description = (here / "README.md").read_text(encoding="utf-8")
+version = '2.0'
+with open("README.md", "r") as f:
+    long_descr = f.read()
 
 setup(
-    name="snapmap-archiver",
-    version="1.3.1",
-    description="Download all Snapmaps content from a specific location.",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
-    url="https://github.com/king-millez/snapmap-archiver",
-    author="king-millez",
-    author_email="millez.dev@gmail.com",
-    classifiers=[
-        "Programming Language :: Python :: 3",
-        "Operating System :: OS Independent",
-    ],
-    packages=find_packages(),
-    include_package_data=True,
-    python_requires=">=3.6",
+    name = "snapmap-archiver",
+    packages = ["snapmap_archiver"],
+    entry_points = {
+        "console_scripts": ['snapmap-archiver = snapmap_archiver:main']
+        },
+    version = version,
+    description = "Download all Snapmaps content from a specific location.",
+    long_description = long_descr,
+    author = "Miles Greenwark",
+    author_email = "millez.dev@gmail.com",
+    url = "https://github.com/king-millez/snapmap-archiver",
+    python_requires=">=3.10",
     install_requires=[
         "certifi",
         "chardet",
         "idna",
         "requests",
         "urllib3",
-    ],
-    entry_points={"console_scripts": ["snapmap-archiver=snapmap_archiver:main"]},
+    ]
 )

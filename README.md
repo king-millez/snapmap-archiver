@@ -6,23 +6,15 @@ A tool written in Python to download all Snapmaps content from a specific locati
 
 ## Setup
 
-`pip3 install snapmap-archiver`
+`pip install snapmap-archiver`
 
 [View on PyPI](https://pypi.org/project/snapmap-archiver/)
 
-Install dependencies with `pip3`.
+Install dependencies with `pip`.
 
 ```sh
-pip3 install -r requirements.txt
+pip install -r requirements.txt
 ```
-
-### Install [aria2c](http://aria2.github.io/)
-
-Download `aria2c` from here:
-
-[https://aria2.github.io/](https://aria2.github.io/)
-
-This is the downloader used for the fastest Snap download speeds.
 
 ## Usage
 
@@ -45,12 +37,12 @@ python3 -m snapmap_archiver -o ~/Desktop/snap -l='123.123,123.123' -l '445.445,4
 
 #### Input File
 
-With `-t`, you can specify a file containing a list of line-separated Snap URLs or IDs.
+With `-f` or `--file`, you can specify a file containing a list of line-separated Snap URLs or IDs.
 
 E.g
 
 ```sh
-python3 -m snapmap_archiver -o ~/Desktop/snap -t ~/snaps.txt
+python3 -m snapmap_archiver -o ~/Desktop/snaps -t ~/Desktop/snaps.txt
 ```
 
 Inside `snaps.txt`:
@@ -64,20 +56,18 @@ https://map.snapchat.com/ttp/snap/Example/
 
 #### Snap URL
 
-You can also just pass 1 or more normal Snap URLs to the package to download it individually like this:
+You can also just pass 1 or more normal Snap URLs or IDs to the package to download it individually like this:
 
 ```sh
-python3 -m snapmap_archiver -o ~/Desktop/snap 'https://map.snapchat.com/ttp/snap/Example/@-33.643495,115.741281,11.86z'
+python3 -m snapmap_archiver -o ~/Desktop/snap 'https://map.snapchat.com/ttp/snap/Example/@-33.643495,115.741281,11.86z' 'Example'
 ```
 
 #### Export JSON
 
 You can export a JSON file with info about downloaded snaps with the `--write-json` argument, which will contain information like the time the Snap was posted, and the Snap location.
 
+It will write `archive.json` to the specified output directory.
+
 #### Snap Radius
 
 The radius from the coordinates you provide that will be included for downloads. `-r 20000` will download all Snaps within a 20km radius of your coordinates.
-
-#### No Overlay
-
-By default the script merges the video and the overlay file into one file. With the `--no-overlay` argument you can disable this and only download the raw video.  

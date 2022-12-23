@@ -4,6 +4,14 @@ class Coordinates:
         if ',' not in coord_str:
             raise ValueError(f'No comma is present in the provided coordinates.{self.geo_msg}')
         try:
-            self.lat, self.long = coord_str.split(',', 1)
+            lat, long = coord_str.split(',', 1)
+            self.lat = float(lat)
+            self.long = float(long)
         except Exception:
             raise ValueError(f'Provided coordinates could not be split to lat/long points.{self.geo_msg}')
+
+    def __str__(self) -> str:
+        return f'Lat: {self.lat}, Lon: {self.long}'
+
+    def __repr__(self) -> str:
+        return f'({self.lat},{self.long})'
