@@ -4,11 +4,11 @@ A tool written in Python to download all Snapmaps content from a specific locati
 
 ![snapmap-archiver splash](/.github/img/Splash.png)
 
-## Setup
-
 `pip install snapmap-archiver`
 
 [View on PyPI](https://pypi.org/project/snapmap-archiver/)
+
+## Setup (for working in a Python environment)
 
 Install dependencies with `pip`.
 
@@ -19,7 +19,7 @@ pip install -r requirements.txt
 ## Usage
 
 ```sh
-python3 -m snapmap_archiver -o [OUTPUT DIR] -l="[LATITUDE],[LONGITUDE]"
+snapmap-archiver -o [OUTPUT DIR] -l="[LATITUDE],[LONGITUDE]"
 ```
 Unfortunately you have to use the arbitrary `-l="lat,lon"` rather than just `-l "lat,lon"` when parsing negative numbers as `argsparse` interprets said numbers as extra arguments.
 
@@ -32,7 +32,7 @@ Unfortunately you have to use the arbitrary `-l="lat,lon"` rather than just `-l 
 E.g
 
 ```sh
-python3 -m snapmap_archiver -o ~/Desktop/snap -l='123.123,123.123' -l '445.445,445.445'
+snapmap-archiver -o ~/Desktop/snap -l='123.123,123.123' -l '445.445,445.445'
 ```
 
 #### Input File
@@ -42,7 +42,7 @@ With `-f` or `--file`, you can specify a file containing a list of line-separate
 E.g
 
 ```sh
-python3 -m snapmap_archiver -o ~/Desktop/snaps -t ~/Desktop/snaps.txt
+snapmap-archiver -o ~/Desktop/snaps -t ~/Desktop/snaps.txt
 ```
 
 Inside `snaps.txt`:
@@ -59,7 +59,7 @@ https://map.snapchat.com/ttp/snap/Example/
 You can also just pass 1 or more normal Snap URLs or IDs to the package to download it individually like this:
 
 ```sh
-python3 -m snapmap_archiver -o ~/Desktop/snap 'https://map.snapchat.com/ttp/snap/Example/@-33.643495,115.741281,11.86z' 'Example'
+snapmap-archiver -o ~/Desktop/snap 'https://map.snapchat.com/ttp/snap/Example/@-33.643495,115.741281,11.86z' 'Example'
 ```
 
 #### Export JSON
