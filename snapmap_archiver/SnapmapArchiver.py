@@ -5,7 +5,7 @@ import requests
 from time import sleep
 from typing import Iterable
 
-from snapmap_archiver.coordinates import Coordinates
+from snapmap_archiver.Coordinates import Coordinates
 from snapmap_archiver.snap import Snap
 
 
