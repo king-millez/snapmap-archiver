@@ -4,7 +4,7 @@
 import re
 from setuptools import setup
 
-version = '2.0.1'
+version = '2.0.2'
 with open("README.md", "r") as f:
     long_descr = f.read()
 
