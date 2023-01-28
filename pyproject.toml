@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "snapmap-archiver"
-version = "2.0.2"
+version = "2.1.0"
 description = "Download all Snapmaps content from a specific location."
 readme = "README.md"
-authors = ["king-millez <Millez.Dev@gmail.com>"]
+authors = ["Miles Greenwark <Millez.Dev@gmail.com>"]
 license = "GPL-3.0-or-later"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 requests = "^2.25.1"
 
 [tool.poetry.dev-dependencies]

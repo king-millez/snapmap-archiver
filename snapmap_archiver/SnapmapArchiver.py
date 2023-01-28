@@ -1,22 +1,31 @@
 import os
 import re
+import sys
 import json
 import requests
 from time import sleep
-from typing import Iterable
+from typing import Iterable, Any
+from datetime import datetime
 
-from snapmap_archiver.Coordinates import Coordinates
-from snapmap_archiver.snap import Snap
-
-
-MAX_RADIUS = 85_000
-ISSUES_URL = "https://github.com/king-millez/snapmap-archiver/issues/new/choose"
+from snapmap_archiver.coordinates import Coordinates
+from snapmap_archiver.snap import Snap, SnapJSONEncoder
 
 
 class SnapmapArchiver:
+    MAX_RADIUS = 85_000
+    ISSUES_URL = "https://github.com/king-millez/snapmap-archiver/issues/new/choose"
+    SNAP_PATTERN = re.compile(
+        r"(?:https?:\/\/map\.snapchat\.com\/ttp\/snap\/)?(W7_(?:[aA-zZ0-9\-_\+]{22})(?:[aA-zZ0-9-_\+]{28})AAAAA[AQ])(?:\/?@-?[0-9]{1,3}\.?[0-9]{0,},-?[0-9]{1,3}\.?[0-9]{0,}(?:,[0-9]{1,3}\.?[0-9]{0,}z))?"
+    )
+
     def __init__(self, *args, **kwargs) -> None:
+        if sys.version_info < (3, 10):
+            raise RuntimeError(
+                "Python 3.10 or above is required to use snapmap-archiver!"
+            )
+
         self.write_json = kwargs.get("write_json")
-        self.all_snaps: dict[str, dict[str, str]] = {}
+        self.all_snaps: dict[str, Snap] = {}
         self.arg_snaps = args
         self.coords_list = []
         self.radius = 10_000
@@ -27,7 +36,7 @@ class SnapmapArchiver:
 
         if not kwargs["locations"] and not args and not kwargs["input_file"]:
             raise ValueError(
-                "Some sort of input is required; location (-l), input file (--file), and raw Snap IDs are all valid options."
+                "Some sort of input is required; location (-l), input file (-f), and raw Snap IDs are all valid options."
             )
 
         if not kwargs["output_dir"]:
@@ -42,7 +51,9 @@ class SnapmapArchiver:
 
         if kwargs.get("radius"):
             self.radius = (
-                MAX_RADIUS if kwargs["radius"] > MAX_RADIUS else kwargs["radius"]
+                self.MAX_RADIUS
+                if kwargs["radius"] > self.MAX_RADIUS
+                else kwargs["radius"]
             )
 
         # Query provided coordinates for Snaps
@@ -55,7 +66,7 @@ class SnapmapArchiver:
         if kwargs.get("input_file"):
             self.input_file = kwargs["input_file"]
 
-    def download_snaps(self, group: Iterable[Snap] | Snap):
+    def download_snaps(self, group: list[Snap] | Snap):
         if isinstance(group, Snap):
             group = [group]
         for snap in group:
@@ -67,7 +78,7 @@ class SnapmapArchiver:
                 f.write(requests.get(snap.url).content)
             print(f" - Downloaded {fpath}.")
 
-    def query_snaps(self, snaps: str | Iterable[str]) -> list[Snap | None]:
+    def query_snaps(self, snaps: str | Iterable[str]) -> list[Snap]:
         if isinstance(snaps, str):
             snaps = [
                 snaps
@@ -75,7 +86,7 @@ class SnapmapArchiver:
         to_query = []
         for snap_id in snaps:
             rgx_match = re.search(
-                r"(?:https?:\/\/map\.snapchat\.com\/ttp\/snap\/)?(W7_(?:[aA-zZ0-9\-_\+]{22})(?:[aA-zZ0-9-_\+]{28})AAAAA[AQ])(?:\/?@-?[0-9]{1,3}\.?[0-9]{0,},-?[0-9]{1,3}\.?[0-9]{0,}(?:,[0-9]{1,3}\.?[0-9]{0,}z))?",
+                self.SNAP_PATTERN,
                 snap_id,
             )
             if not rgx_match:
@@ -83,13 +94,15 @@ class SnapmapArchiver:
                 continue
             to_query.append(rgx_match.group(1))
         try:
-            return [
-                self._parse_snap(snap)
-                for snap in requests.post(
-                    "https://ms.sc-jpl.com/web/getStoryElements",
-                    json={"snapIds": to_query},
-                ).json()["elements"]
-            ]
+            retl = []
+            for snap in requests.post(
+                "https://ms.sc-jpl.com/web/getStoryElements",
+                json={"snapIds": to_query},
+            ).json()["elements"]:
+                s = self._parse_snap(snap)
+                if s:
+                    retl.append(s)
+            return retl
         except requests.exceptions.JSONDecodeError:
             return []
 
@@ -155,7 +168,7 @@ class SnapmapArchiver:
         if self.input_file:
             if os.path.isfile(self.input_file):
                 with open(self.input_file, "r") as f:
-                    to_format = f.read().split("\n")
+                    to_format = [ln for ln in f.read().split("\n") if ln.strip()]
                 self.download_snaps(self.query_snaps(to_format))
             else:
                 raise FileNotFoundError("Input file does not exist.")
@@ -164,30 +177,50 @@ class SnapmapArchiver:
         self.download_snaps(self.query_snaps(self.arg_snaps))
 
         if self.write_json:
-            with open(os.path.join(self.output_dir, "archive.json"), "w") as f:
-                f.write(json.dumps(self._transform_index(self.all_snaps), indent=2))
+            with open(
+                os.path.join(
+                    self.output_dir, f"archive_{int(datetime.now().timestamp())}.json"
+                ),
+                "w",
+            ) as f:
+                f.write(
+                    json.dumps(
+                        self._transform_index(self.all_snaps),
+                        indent=2,
+                        cls=SnapJSONEncoder,
+                    )
+                )
 
     def _transform_index(self, index: dict[str, Snap]):
         return [v for v in index.values()]
 
-    def _parse_snap(self, snap: dict):
-        data_dict = {"create_time": snap["timestamp"], "snap_id": snap["id"]}
+    def _parse_snap(
+        self,
+        snap: dict[
+            str, Any
+        ],  # I don't like the Any type but this dict is so dynamic there isn't much point hinting it accurately.
+    ) -> Snap | None:
+        data_dict = {
+            "create_time": round(int(snap["timestamp"]) * 10**-3, 3),
+            "snap_id": snap["id"],
+        }
         if snap["snapInfo"].get("snapMediaType"):
             data_dict["file_type"] = "mp4"
         elif snap["snapInfo"].get("streamingMediaInfo"):
             data_dict["file_type"] = "jpg"
         else:
             print(
-                f'**Unknown Snap type detected!**\n\tID: {snap["id"]}\n\tSnap data: {json.dumps(snap)}\nPlease report this at {ISSUES_URL}\n'
+                f'**Unknown Snap type detected!**\n\tID: {snap["id"]}\n\tSnap data: {json.dumps(snap)}\nPlease report this at {self.ISSUES_URL}\n'
             )
-            return
+            return None
         url = snap["snapInfo"]["streamingMediaInfo"].get("mediaUrl")
         if not url:
-            return
+            return None
         data_dict["url"] = url
+        s = Snap(**data_dict)
         if not self.all_snaps.get(snap["id"]):
-            self.all_snaps[snap["id"]] = data_dict
-        return Snap(**data_dict)
+            self.all_snaps[snap["id"]] = s
+        return s
 
     def _get_epoch(self):
         epoch_endpoint = requests.post(
@@ -201,7 +234,7 @@ class SnapmapArchiver:
                     return entry["id"]["epoch"]
         else:
             raise self.MissingEpochError(
-                f"The API epoch could not be obtained.\n\nPlease report this at {ISSUES_URL}"
+                f"The API epoch could not be obtained.\n\nPlease report this at {self.ISSUES_URL}"
             )
 
     class MissingEpochError(Exception):

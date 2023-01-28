@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+import json
+from dataclasses import dataclass, asdict
 
 
 @dataclass
@@ -7,3 +8,8 @@ class Snap:
     url: str
     create_time: int
     file_type: str
+
+
+class SnapJSONEncoder(json.JSONEncoder):
+    def default(self, o: Snap):
+        return asdict(o)

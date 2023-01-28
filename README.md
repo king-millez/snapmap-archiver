@@ -1,6 +1,10 @@
 # snapmap-archiver
 
-A tool written in Python to download all Snapmaps content from a specific location.
+A tool written in Python **3.10** to download all Snapmaps content from a specific location.
+
+## Install Python 3.10+
+
+Be sure to check that you're using a version of Python that is 3.10 or above. **This project will not work on Python 3.9 or below!**
 
 ![snapmap-archiver splash](/.github/img/Splash.png)
 
@@ -21,6 +25,7 @@ pip install -r requirements.txt
 ```sh
 snapmap-archiver -o [OUTPUT DIR] -l="[LATITUDE],[LONGITUDE]"
 ```
+
 Unfortunately you have to use the arbitrary `-l="lat,lon"` rather than just `-l "lat,lon"` when parsing negative numbers as `argsparse` interprets said numbers as extra arguments.
 
 ### Optional Arguments
@@ -42,7 +47,7 @@ With `-f` or `--file`, you can specify a file containing a list of line-separate
 E.g
 
 ```sh
-snapmap-archiver -o ~/Desktop/snaps -t ~/Desktop/snaps.txt
+snapmap-archiver -o ~/Desktop/snaps -f ~/Desktop/snaps.txt
 ```
 
 Inside `snaps.txt`:
