@@ -178,7 +178,7 @@ class SnapmapArchiver:
         snap_ids.extend(self.arg_snaps)
 
         # Download Snaps provided from the command line
-        self.download_snaps(self.query_snaps(self.arg_snaps))
+        self.download_snaps(self.query_snaps(snap_ids))
 
         if self.write_json:
             with open(

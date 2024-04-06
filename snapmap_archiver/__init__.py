@@ -3,12 +3,10 @@ import argparse
 from snapmap_archiver.SnapmapArchiver import SnapmapArchiver
 
 
-USAGE_MSG = 'snapmap_archiver -o [OUTPUT DIR] -l="[LATITUDE],[LONGITUDE]"\n\nUse -h to display more options.'
-
-
 def main():
     parser = argparse.ArgumentParser(
-        description="Download content from Snapmaps", usage=USAGE_MSG
+        description="Download content from Snapmaps",
+        usage='snapmap_archiver -o [OUTPUT DIR] -l="[LATITUDE],[LONGITUDE]"\n\nUse -h to display more options.',
     )
     parser.add_argument(
         "-o",
