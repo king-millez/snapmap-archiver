@@ -59,7 +59,7 @@ def main():
         *unknown,
         radius=args.radius,
         output_dir=args.output_dir,
-        locations=args.location,
+        locations=[location for location, in args.location],
         zoom_depth=args.zoom_depth,
         write_json=args.write_json,
         input_file=args.input_file,

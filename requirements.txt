@@ -1,5 +1,1 @@
-﻿certifi
-chardet
-idna
-requests
-urllib3
+﻿requests==2.25.1

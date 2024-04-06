@@ -8,6 +8,7 @@ class Snap:
     url: str
     create_time: int
     file_type: str
+    location: str
 
 
 class SnapJSONEncoder(json.JSONEncoder):
