@@ -198,7 +198,7 @@ class SnapmapArchiver:
         self,
         snap: dict[
             str, Any
-        ],  # I don't like the Any type but this dict is so dynamic there isn't much point hinting it accurately.,
+        ],  # I don't like the Any type but this dict is so dynamic there isn't much point hinting it accurately.
     ) -> Snap | None:
         if self.all_snaps.get(snap["id"]):
             return self.all_snaps[snap["id"]]
