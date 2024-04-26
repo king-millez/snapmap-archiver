@@ -1,16 +1,20 @@
 [tool.poetry]
 name = "snapmap-archiver"
-version = "2.1.2"
+version = "2.2.0"
 description = "Download all Snap Map content from a specific location."
 readme = "README.md"
 authors = ["Miles Greenwark <Millez.Dev@gmail.com>"]
 license = "GPL-3.0-or-later"
+packages = [{include = "snapmap_archiver"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
 requests = "^2.25.1"
 
 [tool.poetry.dev-dependencies]
+
+[tool.poetry.scripts]
+snapmap-archiver = "snapmap_archiver:main"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
