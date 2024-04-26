@@ -51,6 +51,14 @@ def main():
         type=str,
         help="File containing line-separated Snap URLs or IDs",
     )
+    parser.add_argument(
+        "-t",
+        "--since-time",
+        dest="since_time",
+        type=str,
+        help="Remove any Snaps older than the passed time. Either a 10 digit UTC Unix timestamp or [n = number of][m = minutes | h = hours | d = days] (e.g., 1d, 15h, 30m).",
+        default=None,
+    )
     args, unknown = parser.parse_known_args()
 
     sm_archiver = SnapmapArchiver(
@@ -61,5 +69,6 @@ def main():
         zoom_depth=args.zoom_depth,
         write_json=args.write_json,
         input_file=args.input_file,
+        since_time=args.since_time,
     )
     sm_archiver.main()

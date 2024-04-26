@@ -2,14 +2,15 @@ import json
 import os
 import re
 import sys
+import typing as t
 from datetime import datetime
 from time import sleep
-from typing import Any, Iterable
 
 import requests
 
 from snapmap_archiver.coordinates import Coordinates
 from snapmap_archiver.snap import Snap, SnapJSONEncoder
+from snapmap_archiver.time import since_epoch
 
 DEFAULT_RADIUS = 10_000
 MAX_RADIUS = 85_000
@@ -24,7 +25,8 @@ class SnapmapArchiver:
         self,
         *args: str,
         output_dir: str,
-        input_file: str | None = None,
+        input_file: t.Optional[str] = None,
+        since_time: t.Optional[str] = None,
         locations: list[str] = [],
         radius: int = DEFAULT_RADIUS,
         write_json: bool = False,
@@ -34,6 +36,11 @@ class SnapmapArchiver:
             raise RuntimeError(
                 "Python 3.10 or above is required to use snapmap-archiver!"
             )
+
+        self.since_time = None
+        if since_time:
+            self.since_time = since_epoch(since_time.lower())
+            print(f"Skipping Snaps older than [{self.since_time}].")
 
         self.input_file = input_file
         self.arg_snaps = args
@@ -54,7 +61,7 @@ class SnapmapArchiver:
         self.radius = MAX_RADIUS if radius > MAX_RADIUS else radius
         self.coords_list = [Coordinates(latlon) for latlon in locations]
 
-    def download_snaps(self, group: Iterable[Snap]):
+    def download_snaps(self, group: t.Iterable[Snap]):
         for snap in group:
             fpath = os.path.join(self.output_dir, f"{snap.snap_id}.{snap.file_type}")
 
@@ -67,7 +74,7 @@ class SnapmapArchiver:
 
             print(f" - Downloaded [{fpath}].")
 
-    def query_snaps(self, snaps: Iterable[str]) -> list[Snap]:
+    def query_snaps(self, snaps: t.Iterable[str]) -> list[Snap]:
         to_query: list[str] = []
         for snap_id in snaps:
             rgx_match = re.search(
@@ -196,7 +203,7 @@ class SnapmapArchiver:
     def _parse_snap(
         self,
         snap: dict[
-            str, Any
+            str, t.Any
         ],  # I don't like the Any type but this dict is so dynamic there isn't much point hinting it accurately.
     ) -> Snap | None:
         if self.all_snaps.get(snap["id"]):
@@ -215,8 +222,16 @@ class SnapmapArchiver:
             print(f'Media URL for snap [{snap["id"]}] could not be determined.')
             return None
 
+        create_time = round(int(snap["timestamp"]) * 10**-3, 3)
+
+        if (self.since_time) and (create_time < self.since_time):
+            print(
+                f" - [{snap['id']}] is older than the specified time of [{self.since_time}]. Snap timestamp: [{int(create_time)}]. Skipping."
+            )
+            return None
+
         s = Snap(
-            create_time=round(int(snap["timestamp"]) * 10**-3, 3),  # type: ignore
+            create_time=create_time,  # type: ignore
             snap_id=snap["id"],
             url=url,
             file_type=file_type,
