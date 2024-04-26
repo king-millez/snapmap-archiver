@@ -39,7 +39,7 @@ class SnapmapArchiver:
 
         self.since_time = None
         if since_time:
-            self.since_time = since_epoch(since_time)
+            self.since_time = since_epoch(since_time.lower())
             print(f"Skipping Snaps older than [{self.since_time}].")
 
         self.input_file = input_file
