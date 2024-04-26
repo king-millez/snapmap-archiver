@@ -1,11 +1,12 @@
+import json
 import os
 import re
 import sys
-import json
-import requests
-from time import sleep
-from typing import Iterable, Any
 from datetime import datetime
+from time import sleep
+from typing import Any, Iterable
+
+import requests
 
 from snapmap_archiver.coordinates import Coordinates
 from snapmap_archiver.snap import Snap, SnapJSONEncoder
@@ -14,20 +15,20 @@ DEFAULT_RADIUS = 10_000
 MAX_RADIUS = 85_000
 ISSUES_URL = "https://github.com/king-millez/snapmap-archiver/issues/new/choose"
 SNAP_PATTERN = re.compile(
-    r"(?:https?:\/\/map\.snapchat\.com\/ttp\/snap\/)?(W7_(?:[aA-zZ0-9\-_\+]{22})(?:[aA-zZ0-9-_\+]{28})AAAAA[AQ])(?:\/?@-?[0-9]{1,3}\.?[0-9]{0,},-?[0-9]{1,3}\.?[0-9]{0,}(?:,[0-9]{1,3}\.?[0-9]{0,}z))?"
+    r"(?:https?:\/\/map\.snapchat\.com\/ttp\/snap\/)?(W7_(?:[a-zA-Z0-9\-_\+]{56})(?:\/?@-?[0-9]{1,3}\.?[0-9]{0,},-?[0-9]{1,3}\.?[0-9]{0,}(?:,[0-9]{1,3}\.?[0-9]{0,}z))?)"
 )
 
 
 class SnapmapArchiver:
     def __init__(
         self,
+        *args: str,
         output_dir: str,
         input_file: str | None = None,
         locations: list[str] = [],
         radius: int = DEFAULT_RADIUS,
         write_json: bool = False,
         zoom_depth: int = 5,
-        *args: str,
     ) -> None:
         if sys.version_info < (3, 10):
             raise RuntimeError(
@@ -43,7 +44,7 @@ class SnapmapArchiver:
 
         if not locations and not args and not input_file:
             raise ValueError(
-                "Some sort of input is required; location (-l), input file (-f), and raw Snap IDs are all valid options."
+                "Some sort of input is required. Run snapmap-archiver with [-h] to see a list of options."
             )
 
         self.output_dir = os.path.expanduser(output_dir)
@@ -67,11 +68,6 @@ class SnapmapArchiver:
             print(f" - Downloaded [{fpath}].")
 
     def query_snaps(self, snaps: Iterable[str]) -> list[Snap]:
-        if (
-            not snaps
-        ):  # If no snaps are provided, return an empty list. Otherwise an API error will occur.
-            return []
-
         to_query: list[str] = []
         for snap_id in snaps:
             rgx_match = re.search(
@@ -79,9 +75,12 @@ class SnapmapArchiver:
                 snap_id,
             )
             if not rgx_match:
-                print(f"{snap_id} is not a valid Snap URL or ID.")
+                print(f" - [{snap_id}] is not a valid Snap URL or ID.")
                 continue
             to_query.append(rgx_match.group(1))
+
+        if not to_query:
+            return []
 
         api_response = requests.post(
             "https://ms.sc-jpl.com/web/getStoryElements",
@@ -206,7 +205,9 @@ class SnapmapArchiver:
         file_type = (
             "mp4"
             if snap["snapInfo"].get("snapMediaType")
-            else "jpg" if snap["snapInfo"].get("streamingMediaInfo") else "UNKNOWN"
+            else "jpg"
+            if snap["snapInfo"].get("streamingMediaInfo")
+            else "UNKNOWN"
         )
 
         url: str | None = snap["snapInfo"]["streamingMediaInfo"].get("mediaUrl")
@@ -219,7 +220,12 @@ class SnapmapArchiver:
             snap_id=snap["id"],
             url=url,
             file_type=file_type,
-            location=snap["snapInfo"].get("title").get("fallback", "UNKNOWN"),
+            location=snap["snapInfo"]
+            .get("title", {})
+            .get(
+                "fallback",
+                snap["snapInfo"].get("localitySubtitle", {}).get("fallback", "UNKNOWN"),
+            ),
         )
 
         self.all_snaps[snap["id"]] = s
