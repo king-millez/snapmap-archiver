@@ -1,74 +1,17 @@
-import argparse
+import os
+import re
+from datetime import datetime
 
-from snapmap_archiver.SnapmapArchiver import SnapmapArchiver
+DEFAULT_WRITE_JSON = False
+DEFAULT_ZOOM_DEPTH = 5
+DEFAULT_RADIUS = 10_000
+SNAP_PATTERN = re.compile(
+    r"(?:https?:\/\/map\.snapchat\.com\/ttp\/snap\/)?(W7_(?:[a-zA-Z0-9\-_\+]{56})(?:\/?@-?[0-9]{1,3}\.?[0-9]{0,},-?[0-9]{1,3}\.?[0-9]{0,}(?:,[0-9]{1,3}\.?[0-9]{0,}z))?)"
+)
+DEFAULT_API_HOST = "https://ms.sc-jpl.com"
+ISSUES_URL = "https://github.com/king-millez/snapmap-archiver/issues/new/choose"
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Download content from Snapmaps",
-        usage='snapmap_archiver -o [OUTPUT DIR] -l="[LATITUDE],[LONGITUDE]"\n\nUse -h to display more options.',
-    )
-    parser.add_argument(
-        "-o",
-        dest="output_dir",
-        type=str,
-        help="Output directory for downloaded content.",
-    )
-    parser.add_argument(
-        "-z",
-        dest="zoom_depth",
-        type=float,
-        help="Snapmaps zoom depth, default is 5.",
-        default=5,
-    )
-    parser.add_argument(
-        "-r",
-        dest="radius",
-        type=int,
-        help="Maximum Snap radius in meters, default is 30,000.",
-        default=30_000,
-    )
-    parser.add_argument(
-        "--write-json",
-        dest="write_json",
-        action="store_true",
-        default=False,
-        help="Write Snap metadata JSON.",
-    )
-    parser.add_argument(
-        "-l",
-        "--location",
-        dest="location",
-        type=str,
-        help="Latitude/longitude of desired area. Can be used multiple times",
-        action="append",
-        nargs="*",
-    )
-    parser.add_argument(
-        "-f",
-        "--file",
-        dest="input_file",
-        type=str,
-        help="File containing line-separated Snap URLs or IDs",
-    )
-    parser.add_argument(
-        "-t",
-        "--since-time",
-        dest="since_time",
-        type=str,
-        help="Remove any Snaps older than the passed time. Either a 10 digit UTC Unix timestamp or [n = number of][m = minutes | h = hours | d = days] (e.g., 1d, 15h, 30m).",
-        default=None,
-    )
-    args, unknown = parser.parse_known_args()
-
-    sm_archiver = SnapmapArchiver(
-        *unknown,
-        radius=args.radius,
-        output_dir=args.output_dir,
-        locations=[location for location, in (args.location if args.location else [])],
-        zoom_depth=args.zoom_depth,
-        write_json=args.write_json,
-        input_file=args.input_file,
-        since_time=args.since_time,
-    )
-    sm_archiver.main()
+default_output_dir = os.path.join(
+    os.getcwd(), f"snaps-{int(datetime.now().timestamp())}"
+)

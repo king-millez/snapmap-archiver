@@ -40,7 +40,7 @@ poetry run python3 main.py [...args]
 snapmap-archiver -o [OUTPUT DIR] -l="[LATITUDE],[LONGITUDE]"
 ```
 
-Unfortunately you have to use the arbitrary `-l="lat,lon"` rather than just `-l "lat,lon"` when parsing negative numbers as `argsparse` interprets said numbers as extra arguments.
+Unfortunately you have to use the arbitrary `-l="lat,lon"` (with the equals sign) rather than just `-l "lat,lon"` when parsing negative numbers as `argsparse` interprets said numbers as extra arguments.
 
 ### Optional Arguments
 
@@ -94,9 +94,9 @@ snapmap-archiver -t 1714392291 -l '-123,123'
 Examples with a dynamic time filter:
 
 ```sh
-snapmap-archiver -t 3d -l '-123,123'  # Removes anything older than 3 days
-snapmap-archiver -t 5h -l '-123,123'  # Removes anything older than 5 hours
-snapmap-archiver -t 30m -l '-123,123'  # Removes anything older than 30 minutes
+snapmap-archiver -t 3d -l='-123,123'  # Removes anything older than 3 days
+snapmap-archiver -t 5h -l='-123,123'  # Removes anything older than 5 hours
+snapmap-archiver -t 30m -l='-123,123'  # Removes anything older than 30 minutes
 ```
 
 #### Export JSON
@@ -112,3 +112,7 @@ The radius from the coordinates you provide that will be included for downloads.
 #### Zoom Depth
 
 You can input a custom zoom depth value (`-z`) that correlates to a zoom level in the GUI. ArcGIS has documentation about this [here](https://developers.arcgis.com/documentation/glossary/zoom-level/), but essentially the lower the number, the further zoomed-out you are. `5` is the default and shouldn't cause any issues.
+
+#### Debug Mode
+
+Enable debug logs with `-d`/`--debug`.
