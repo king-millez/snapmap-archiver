@@ -88,7 +88,7 @@ Use the `-t` flag with a Unix timestamp or day, hour, or minute interval to skip
 Example with a Unix timestamp:
 
 ```sh
-snapmap-archiver -t 1714392291 -l '-123,123'
+snapmap-archiver -t 1714392291 -l='-123,123'
 ```
 
 Examples with a dynamic time filter:
