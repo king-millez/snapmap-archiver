@@ -1,190 +1,105 @@
+import asyncio
 import json
 import os
-import re
 import sys
 import typing as t
 from datetime import datetime
 from time import sleep
 
+import aiofiles
+import httpx
 import requests
+from alive_progress import alive_bar
+from loguru._logger import Logger
 
+from snapmap_archiver import (
+    DEFAULT_API_HOST,
+    DEFAULT_RADIUS,
+    DEFAULT_WRITE_JSON,
+    DEFAULT_ZOOM_DEPTH,
+    ISSUES_URL,
+    default_output_dir,
+)
 from snapmap_archiver.coordinates import Coordinates
 from snapmap_archiver.snap import Snap, SnapJSONEncoder
 from snapmap_archiver.time import since_epoch
 
-DEFAULT_RADIUS = 10_000
 MAX_RADIUS = 85_000
-ISSUES_URL = "https://github.com/king-millez/snapmap-archiver/issues/new/choose"
-SNAP_PATTERN = re.compile(
-    r"(?:https?:\/\/map\.snapchat\.com\/ttp\/snap\/)?(W7_(?:[a-zA-Z0-9\-_\+]{56})(?:\/?@-?[0-9]{1,3}\.?[0-9]{0,},-?[0-9]{1,3}\.?[0-9]{0,}(?:,[0-9]{1,3}\.?[0-9]{0,}z))?)"
-)
 
 
 class SnapmapArchiver:
     def __init__(
         self,
-        *args: str,
-        output_dir: str,
-        input_file: t.Optional[str] = None,
+        logger: Logger,
+        output_dir: str = default_output_dir,
         since_time: t.Optional[str] = None,
-        locations: list[str] = [],
-        radius: int = DEFAULT_RADIUS,
-        write_json: bool = False,
-        zoom_depth: int = 5,
+        write_json: bool = DEFAULT_WRITE_JSON,
+        api_host: str = DEFAULT_API_HOST,
     ) -> None:
         if sys.version_info < (3, 10):
             raise RuntimeError(
                 "Python 3.10 or above is required to use snapmap-archiver!"
             )
 
+        self.logger = logger
+        self.api_host = api_host
+        self.output_dir = os.path.expanduser(output_dir)
+        self.write_json = write_json
+
         self.since_time = None
         if since_time:
             self.since_time = since_epoch(since_time.lower())
-            print(f"Skipping Snaps older than [{self.since_time}].")
+            self.logger.info(f"Skipping Snaps older than [{self.since_time}].")
 
-        self.input_file = input_file
-        self.arg_snaps = args
+        self.snap_cache: dict[str, Snap] = {}
 
-        self.write_json = write_json
-        self.zoom_depth = zoom_depth
-        self.all_snaps: dict[str, Snap] = {}
-
-        if not locations and not args and not input_file:
-            raise ValueError(
-                "Some sort of input is required. Run snapmap-archiver with [-h] to see a list of options."
-            )
-
-        self.output_dir = os.path.expanduser(output_dir)
         if not os.path.isdir(self.output_dir):
             os.makedirs(self.output_dir, exist_ok=True)
 
-        self.radius = MAX_RADIUS if radius > MAX_RADIUS else radius
-        self.coords_list = [Coordinates(latlon) for latlon in locations]
+    def _is_cached(self, snap_id: str) -> bool:
+        return snap_id in self.snap_cache
 
-    def download_snaps(self, group: t.Iterable[Snap]):
-        for snap in group:
-            fpath = os.path.join(self.output_dir, f"{snap.snap_id}.{snap.file_type}")
+    async def _batched_download(
+        self, snap_url: str, output_path: str, bar: t.Any, client: httpx.AsyncClient
+    ):
+        if os.path.isfile(output_path):
+            self.logger.debug(f" - [{output_path}] already exists.")
+            bar()
+            return
 
-            if os.path.isfile(fpath):
-                print(f" - [{fpath}] already exists.")
-                continue
+        async with aiofiles.open(output_path, "wb") as f:
+            await f.write((await client.get(snap_url)).content)
 
-            with open(fpath, "wb") as f:
-                f.write(requests.get(snap.url).content)
+        self.logger.debug(f" - Downloaded [{output_path}].")
+        bar()
 
-            print(f" - Downloaded [{fpath}].")
-
-    def query_snaps(self, snaps: t.Iterable[str]) -> list[Snap]:
-        to_query: list[str] = []
-        for snap_id in snaps:
-            rgx_match = re.search(
-                SNAP_PATTERN,
-                snap_id,
-            )
-            if not rgx_match:
-                print(f" - [{snap_id}] is not a valid Snap URL or ID.")
-                continue
-            to_query.append(rgx_match.group(1))
-
-        if not to_query:
-            return []
-
-        api_response = requests.post(
-            "https://ms.sc-jpl.com/web/getStoryElements",
-            json={"snapIds": to_query},
-        )
-        try:
-            retl: list[Snap] = []
-            for snap in api_response.json().get("elements", []):
-                s = self._parse_snap(snap)
-                if s:
-                    retl.append(s)
-            return retl
-        except requests.exceptions.JSONDecodeError as e:
-            print(
-                f"Encountered error while querying Snap IDs:\n[{e}]. API Response: [{api_response.text}]."
-            )
-            return []
-
-    def query_coords(self, coords: Coordinates):
-        to_download: dict[str, Snap] = {}
-        current_iteration = self.radius
-        epoch = self._get_epoch()
-        while current_iteration != 1:
-            print(f"Querying with radius [{current_iteration}]...")
-            json_data = None
-            while not json_data:
-                api_data = requests.post(
-                    "https://ms.sc-jpl.com/web/getPlaylist",
-                    headers={
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "requestGeoPoint": {"lat": coords.lat, "lon": coords.long},
-                        "zoomLevel": self.zoom_depth,
-                        "tileSetId": {"flavor": "default", "epoch": epoch, "type": 1},
-                        "radiusMeters": current_iteration,
-                        "maximumFuzzRadius": 0,
-                    },
-                ).text
-
-                if api_data:
-                    if api_data.strip() == "Too many requests":
-                        print("You have been rate limited. Sleeping for 1 minute.")
-                        sleep(60)
-                    else:
-                        try:
-                            json_data = json.loads(api_data)["manifest"]["elements"]
-                        except requests.exceptions.JSONDecodeError:
-                            print(
-                                f"Unable to decode API response (likely a rate limit): [{api_data}] Sleeping for 1 minute."
+    def download_cached_snaps(self):
+        with alive_bar(
+            len(self.snap_cache), title=f"Downloading to [{self.output_dir}]..."
+        ) as bar:
+            all_snaps = list(self.snap_cache.values())
+            client = httpx.AsyncClient()
+            for snap_chunk in [
+                all_snaps[i : i + 20]
+                for i in range(
+                    0, len(all_snaps), 20
+                )  # 20 connections seems to be ok with rate limits.
+            ]:
+                asyncio.get_event_loop().run_until_complete(
+                    asyncio.gather(
+                        *[
+                            self._batched_download(
+                                snap.url,
+                                os.path.join(
+                                    self.output_dir, f"{snap.snap_id}.{snap.file_type}"
+                                ),
+                                bar,
+                                client,
                             )
-                            sleep(60)
-
-            for snap in json_data:
-                if to_download.get(
-                    snap["id"]
-                ):  # Avoids downloading duplicates. Faster than a list because the Snap ID is indexed
-                    continue
-
-                parsed = self._parse_snap(snap)
-
-                if not parsed:
-                    continue
-
-                to_download[snap["id"]] = parsed
-
-            if current_iteration > 2000:
-                current_iteration -= 2000
-            elif current_iteration > 1000:
-                current_iteration -= 100
-            else:
-                current_iteration = 1
-
-        print(f"Found [{len(list(to_download.keys()))}] Snaps.")
-        return to_download.values()
-
-    def main(self):
-        # Query provided coordinates
-        for coords in self.coords_list:
-            self.download_snaps(self.query_coords(coords))
-
-        snap_ids = []
-
-        # Download Snaps from input file
-        if self.input_file:
-            if os.path.isfile(self.input_file):
-                with open(self.input_file, "r") as f:
-                    snap_ids = [ln for ln in f.read().split("\n") if ln.strip()]
-            else:
-                raise FileNotFoundError(
-                    f"Input file [{self.input_file}] does not exist."
+                            for snap in snap_chunk
+                        ]
+                    )
                 )
-
-        snap_ids.extend(self.arg_snaps)
-
-        # Download Snaps provided from the command line
-        self.download_snaps(self.query_snaps(snap_ids))
 
         if self.write_json:
             with open(
@@ -194,11 +109,119 @@ class SnapmapArchiver:
                 "w",
             ) as f:
                 json.dump(
-                    list(self.all_snaps.values()),
+                    list(self.snap_cache.values()),
                     f,
                     indent=2,
                     cls=SnapJSONEncoder,
                 )
+
+    def query_snaps(self, snaps: t.Iterable[str]) -> list[Snap]:
+        to_query = [snap_id for snap_id in snaps if not self._is_cached(snap_id)]
+        if not to_query:
+            return []
+
+        api_response = requests.post(
+            f"{self.api_host}/web/getStoryElements",
+            json={"snapIds": to_query},
+        )
+
+        try:
+            parsed_snaps: list[Snap] = []
+            for snap in api_response.json().get("elements", []):
+                s = self._parse_snap(snap)
+                if s:
+                    parsed_snaps.append(s)
+            return parsed_snaps
+        except requests.exceptions.JSONDecodeError as e:
+            self.logger.warning(
+                f"Encountered error while querying Snap IDs:\n[{e}]. API Response: [{api_response.text}]."
+            )
+            return []
+
+    def query_coords(
+        self,
+        coords: Coordinates,
+        zoom_depth: int = DEFAULT_ZOOM_DEPTH,
+        requested_radius: int = DEFAULT_RADIUS,
+    ) -> list[Snap]:
+        if requested_radius > MAX_RADIUS:
+            radius = MAX_RADIUS
+            self.logger.info(
+                f"Radius cannot be larger than [{MAX_RADIUS}]. Using [{MAX_RADIUS}] as the radius value."
+            )
+        else:
+            radius = requested_radius
+
+        current_iteration = radius
+        epoch = self._get_epoch()
+        found_snaps = []
+        with alive_bar(
+            radius, manual=True, title=f"Location: {coords.__repr__()}"
+        ) as bar:
+            while current_iteration != 1:
+                snaps_from_coords = None
+                while not snaps_from_coords:
+                    api_response = requests.post(
+                        f"{self.api_host}/web/getPlaylist",
+                        headers={
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "requestGeoPoint": {"lat": coords.lat, "lon": coords.long},
+                            "zoomLevel": zoom_depth,
+                            "tileSetId": {
+                                "flavor": "default",
+                                "epoch": epoch,
+                                "type": 1,
+                            },
+                            "radiusMeters": current_iteration,
+                            "maximumFuzzRadius": 0,
+                        },
+                    ).text
+
+                    if not api_response:
+                        self._coordinate_query_failure("No response received.")
+                    elif api_response.strip() == "Too many requests":
+                        self._coordinate_query_failure("You have been rate limited.")
+                    else:
+                        try:
+                            snaps_from_coords = json.loads(api_response)["manifest"][
+                                "elements"
+                            ]
+                        except json.JSONDecodeError:
+                            self._coordinate_query_failure(
+                                f"Unable to decode API response (likely a rate limit): [{api_response}]."
+                            )
+
+                for snap in snaps_from_coords:
+                    if self._is_cached(snap["id"]):
+                        found_snaps.append(self.snap_cache[snap["id"]])
+                        continue
+
+                    parsed = self._parse_snap(snap)
+                    if not parsed:
+                        continue
+
+                    self.snap_cache[snap["id"]] = parsed
+                    found_snaps.append(parsed)
+
+                if current_iteration > 2000:
+                    current_iteration -= 2000
+                elif current_iteration > 1000:
+                    current_iteration -= 100
+                else:
+                    current_iteration = 1
+                bar(
+                    (radius - current_iteration) / radius
+                    if current_iteration != 1
+                    else 1
+                )
+
+        return found_snaps
+
+    def _coordinate_query_failure(self, msg: str, sleep_seconds: int = 60):
+        self.logger.warning(f"{msg} Sleeping for [{sleep_seconds}] seconds...")
+        sleep(sleep_seconds)
 
     def _parse_snap(
         self,
@@ -206,8 +229,8 @@ class SnapmapArchiver:
             str, t.Any
         ],  # I don't like the Any type but this dict is so dynamic there isn't much point hinting it accurately.
     ) -> Snap | None:
-        if self.all_snaps.get(snap["id"]):
-            return self.all_snaps[snap["id"]]
+        if self.snap_cache.get(snap["id"]):
+            return self.snap_cache[snap["id"]]
 
         file_type = (
             "mp4"
@@ -219,18 +242,20 @@ class SnapmapArchiver:
 
         url: str | None = snap["snapInfo"]["streamingMediaInfo"].get("mediaUrl")
         if not url:
-            print(f'Media URL for snap [{snap["id"]}] could not be determined.')
+            self.logger.warning(
+                f'Media URL for snap [{snap["id"]}] could not be determined.'
+            )
             return None
 
         create_time = round(int(snap["timestamp"]) * 10**-3, 3)
 
         if (self.since_time) and (create_time < self.since_time):
-            print(
+            self.logger.debug(
                 f" - [{snap['id']}] is older than the specified time of [{self.since_time}]. Snap timestamp: [{int(create_time)}]. Skipping."
             )
             return None
 
-        s = Snap(
+        parsed_snap = Snap(
             create_time=create_time,  # type: ignore
             snap_id=snap["id"],
             url=url,
@@ -243,9 +268,9 @@ class SnapmapArchiver:
             ),
         )
 
-        self.all_snaps[snap["id"]] = s
+        self.snap_cache[snap["id"]] = parsed_snap
 
-        return s
+        return parsed_snap
 
     def _get_epoch(self):
         epoch_endpoint = requests.post(
