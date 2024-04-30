@@ -4,9 +4,14 @@ import sys
 from loguru import logger
 from loguru._logger import Logger
 
-from snapmap_archiver import (DEFAULT_RADIUS, DEFAULT_WRITE_JSON,
-                              DEFAULT_ZOOM_DEPTH, ISSUES_URL, SNAP_PATTERN,
-                              default_output_dir)
+from snapmap_archiver import (
+    DEFAULT_RADIUS,
+    DEFAULT_WRITE_JSON,
+    DEFAULT_ZOOM_DEPTH,
+    ISSUES_URL,
+    SNAP_PATTERN,
+    default_output_dir,
+)
 from snapmap_archiver.coordinates import Coordinates
 from snapmap_archiver.SnapmapArchiver import SnapmapArchiver
 
@@ -120,7 +125,9 @@ def main():
     ]
 
     if not valid_snap_ids and not coordinates:
-        logger.error('Some kind of input is required. Run [snapmap-archiver -h] for help.')
+        logger.error(
+            "Some kind of input is required. Run [snapmap-archiver -h] for help."
+        )
         sys.exit(1)
 
     sm_archiver = SnapmapArchiver(

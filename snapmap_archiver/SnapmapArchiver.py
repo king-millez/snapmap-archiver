@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import sys
@@ -5,6 +6,8 @@ import typing as t
 from datetime import datetime
 from time import sleep
 
+import aiofiles
+import httpx
 import requests
 from alive_progress import alive_bar
 from loguru._logger import Logger
@@ -56,25 +59,47 @@ class SnapmapArchiver:
     def _is_cached(self, snap_id: str) -> bool:
         return snap_id in self.snap_cache
 
+    async def _batched_download(
+        self, snap_url: str, output_path: str, bar: t.Any, client: httpx.AsyncClient
+    ):
+        if os.path.isfile(output_path):
+            self.logger.debug(f" - [{output_path}] already exists.")
+            bar()
+            return
+
+        async with aiofiles.open(output_path, "wb") as f:
+            await f.write((await client.get(snap_url)).content)
+
+        self.logger.debug(f" - Downloaded [{output_path}].")
+        bar()
+
     def download_cached_snaps(self):
         with alive_bar(
             len(self.snap_cache), title=f"Downloading to [{self.output_dir}]..."
         ) as bar:
-            for snap in self.snap_cache.values():
-                fpath = os.path.join(
-                    self.output_dir, f"{snap.snap_id}.{snap.file_type}"
+            all_snaps = list(self.snap_cache.values())
+            client = httpx.AsyncClient()
+            for snap_chunk in [
+                all_snaps[i : i + 20]
+                for i in range(
+                    0, len(all_snaps), 20
+                )  # 20 connections seems to be ok with rate limits.
+            ]:
+                asyncio.get_event_loop().run_until_complete(
+                    asyncio.gather(
+                        *[
+                            self._batched_download(
+                                snap.url,
+                                os.path.join(
+                                    self.output_dir, f"{snap.snap_id}.{snap.file_type}"
+                                ),
+                                bar,
+                                client,
+                            )
+                            for snap in snap_chunk
+                        ]
+                    )
                 )
-
-                if os.path.isfile(fpath):
-                    self.logger.debug(f" - [{fpath}] already exists.")
-                    bar()
-                    continue
-
-                with open(fpath, "wb") as f:
-                    f.write(requests.get(snap.url).content)
-
-                self.logger.debug(f" - Downloaded [{fpath}].")
-                bar()
 
         if self.write_json:
             with open(
