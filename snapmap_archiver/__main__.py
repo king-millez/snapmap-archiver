@@ -16,7 +16,7 @@ from snapmap_archiver.coordinates import Coordinates
 from snapmap_archiver.SnapmapArchiver import SnapmapArchiver
 
 parser = argparse.ArgumentParser(
-    description="Download content from Snapmaps",
+    description="Download content from Snap Map",
     usage='snapmap_archiver -o [OUTPUT DIR] -l="[LATITUDE],[LONGITUDE]"\n\nUse -h to display more options.',
 )
 
@@ -31,14 +31,14 @@ parser.add_argument(
     "-z",
     dest="zoom_depth",
     type=float,
-    help="Snapmaps zoom depth, default is 5.",
+    help=f"Snap Map zoom depth, default is [{DEFAULT_ZOOM_DEPTH}].",
     default=DEFAULT_ZOOM_DEPTH,
 )
 parser.add_argument(
     "-r",
     dest="radius",
     type=int,
-    help="Maximum Snap radius in meters, default is 30,000.",
+    help=f"Maximum Snap radius in meters, default is [{DEFAULT_RADIUS:,}].",
     default=DEFAULT_RADIUS,
 )
 parser.add_argument(
@@ -53,7 +53,7 @@ parser.add_argument(
     "--location",
     dest="location",
     type=str,
-    help="Latitude/longitude of desired area. Can be used multiple times",
+    help="Latitude/longitude of desired area. Can be used multiple times. If the latitude value is negative, you need to use -l='-37...,123...' with an explicit '=' sign otherwise argparse gets confused.",
     action="append",
     nargs="*",
 )
@@ -76,7 +76,7 @@ parser.add_argument(
     "-d",
     "--debug",
     dest="debug_mode",
-    help="Enable debug logging.",
+    help="Enable debug logging. Disables the animated progress bar for readability.",
     action="store_true",
 )
 
@@ -135,16 +135,26 @@ def main():
         output_dir=args.output_dir,
         write_json=args.write_json,
         since_time=args.since_time,
+        debug_mode=args.debug_mode,
     )
 
+    logger.debug(f"Initialised [{sm_archiver=}].")
+
     for coordinate_set in coordinates:
+        logger.debug(
+            f"Coordinate iteration for [{coordinate_set}], [{sm_archiver.snap_cache=}]..."
+        )
         sm_archiver.query_coords(
             coords=coordinate_set,
             zoom_depth=args.zoom_depth,
             requested_radius=args.radius,
         )
 
+    logger.debug(
+        f"Running direct queries on [{valid_snap_ids}], [{sm_archiver.snap_cache=}]..."
+    )
     sm_archiver.query_snaps(valid_snap_ids)
+
     sm_archiver.download_cached_snaps()
 
 
