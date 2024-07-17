@@ -203,7 +203,7 @@ class SnapmapArchiver:
                 self.logger.debug(f"[{current_iteration=}].")
                 snaps_from_coords = None
 
-                while not snaps_from_coords:
+                while snaps_from_coords is None:
                     request_object = {
                         "url": f"{self.api_host}/web/getPlaylist",
                         "headers": {
